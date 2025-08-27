@@ -8,6 +8,7 @@ import { connectDB } from "./lib/db.js";
 import authRoutes from "./routes/authroutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 
 app.get("/api/health", (_, res) => res.json({ ok: true }));
+app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
@@ -30,6 +32,6 @@ app.use("/api/tasks", taskRoutes);
 const port = process.env.PORT || 4000;
 connectDB().then(() => {
   app.listen(port, () =>
-    console.log(`API running on http://localhost:${port}`)
+    console.log(`Server started on http://localhost:${port}`)
   );
 });

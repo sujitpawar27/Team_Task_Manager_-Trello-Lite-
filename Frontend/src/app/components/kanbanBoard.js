@@ -1,11 +1,6 @@
 "use client";
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from "@hello-pangea/dnd";
-import { TaskCard } from "./task-card";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { TaskCard } from "./taskCard";
 
 const columns = [
   { key: "todo", title: "To Do" },
@@ -13,7 +8,7 @@ const columns = [
   { key: "done", title: "Done" },
 ];
 
-export function KanbanBoard({ tasks, onMove }) {
+export function KanbanBoard({ tasks, onMove, onEditTask, onDeleteTask }) {
   const grouped = Object.fromEntries(
     columns.map((c) => [c.key, tasks.filter((t) => t.status === c.key)])
   );
@@ -23,43 +18,52 @@ export function KanbanBoard({ tasks, onMove }) {
     if (!destination) return;
     const destStatus = destination.droppableId;
     const srcStatus = source.droppableId;
-    if (destStatus !== srcStatus) onMove(draggableId, destStatus);
+    if (destStatus !== srcStatus) {
+      onMove(draggableId, destStatus);
+    }
   };
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-3 gap-6">
         {columns.map((col) => (
           <Droppable droppableId={col.key} key={col.key}>
             {(provided) => (
-              <div
+              <section
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className="card p-3 min-h-[300px]"
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 p-4 min-h-[320px] flex flex-col transition-colors duration-300"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold">{col.title}</h3>
-                  <span className="text-xs text-zinc-500">
+                <header className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white select-none">
+                    {col.title}
+                  </h3>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 select-none">
                     {grouped[col.key].length}
                   </span>
-                </div>
-                <div className="grid gap-2">
+                </header>
+
+                <div className="flex-1 space-y-3 overflow-y-auto">
                   {grouped[col.key].map((t, idx) => (
                     <Draggable key={t._id} draggableId={t._id} index={idx}>
-                      {(p) => (
+                      {(providedDraggable) => (
                         <div
-                          ref={p.innerRef}
-                          {...p.draggableProps}
-                          {...p.dragHandleProps}
+                          ref={providedDraggable.innerRef}
+                          {...providedDraggable.draggableProps}
+                          {...providedDraggable.dragHandleProps}
                         >
-                          <TaskCard task={t} />
+                          <TaskCard
+                            task={t}
+                            onEdit={onEditTask}
+                            onDelete={onDeleteTask}
+                          />
                         </div>
                       )}
                     </Draggable>
                   ))}
                   {provided.placeholder}
                 </div>
-              </div>
+              </section>
             )}
           </Droppable>
         ))}

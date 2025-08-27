@@ -4,6 +4,7 @@ import { requireProjectMember } from "../middleware/membership.js";
 import {
   addMember,
   createProject,
+  getProject,
   listProjects,
   removeMember,
   removeProject,
@@ -26,5 +27,5 @@ r.delete(
   requireProjectMember({ ownerOnly: true }),
   removeMember
 );
-
+r.get("/:id", requireProjectMember(), getProject);
 export default r;

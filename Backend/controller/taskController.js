@@ -51,6 +51,7 @@ export const updateTask = asyncHandler(async (req, res) => {
 });
 
 export const moveTask = asyncHandler(async (req, res) => {
+  console.log("Moving task:", req.params.id, req.body);
   const schema = z.object({ status: z.enum(["todo", "in_progress", "done"]) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return bad(res, parsed.error.errors[0].message);

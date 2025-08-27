@@ -2,6 +2,7 @@ import { z } from "zod";
 import Project from "../models/Project.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { created, notFound, ok } from "../utils/http.js";
+import { bad } from "../utils/http.js"; // ensure bad is imported
 
 export const listProjects = asyncHandler(async (req, res) => {
   const projects = await Project.find({ "members.user": req.user._id }).sort(
@@ -11,6 +12,8 @@ export const listProjects = asyncHandler(async (req, res) => {
 });
 
 export const createProject = asyncHandler(async (req, res) => {
+  console.log(req.body);
+
   const schema = z.object({
     name: z.string().min(1),
     description: z.string().optional(),
@@ -63,4 +66,20 @@ export const removeMember = asyncHandler(async (req, res) => {
   );
   await req.project.save();
   return ok(res, { project: req.project });
+});
+
+// add at top with other exports
+
+export const getProject = asyncHandler(async (req, res) => {
+  const project = await Project.findById(req.params.id).populate(
+    "members.user",
+    "name email"
+  );
+  if (!project) return notFound(res, "Project not found");
+  // ensure requester is a member (or you can use requireProjectMember middleware instead)
+  const member = project.members.find(
+    (m) => m.user._id.toString() === req.user._id.toString()
+  );
+  if (!member) return forbidden(res, "Not a project member");
+  return ok(res, { project });
 });

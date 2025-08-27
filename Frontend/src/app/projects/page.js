@@ -19,7 +19,7 @@ export default function ProjectsPage() {
   }, []);
 
   const create = async () => {
-    if (!name.trim()) return; // avoid empty names
+    if (!name.trim()) return;
     await api.post("/projects", { name, description: desc });
     setName("");
     setDesc("");
@@ -27,7 +27,7 @@ export default function ProjectsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-500 px-6 py-10">
+    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 transition-colors duration-500 px-6 py-10">
       <div className="max-w-7xl mx-auto flex flex-col gap-10">
         {/* Header + Form */}
         <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">

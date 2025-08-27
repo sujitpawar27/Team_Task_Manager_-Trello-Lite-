@@ -10,12 +10,15 @@ const sign = (id) =>
   });
 
 export const register = asyncHandler(async (req, res) => {
+  console.log(req.body);
   const schema = z.object({
     name: z.string().min(2),
     email: z.string().email(),
     password: z.string().min(6),
   });
   const parsed = schema.safeParse(req.body);
+  console.log(parsed);
+
   if (!parsed.success) return bad(res, parsed.error.errors[0].message);
   const exists = await User.findOne({ email: parsed.data.email });
   if (exists) return bad(res, "Email already in use");
