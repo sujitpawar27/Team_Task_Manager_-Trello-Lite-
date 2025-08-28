@@ -4,10 +4,24 @@ import { useState } from "react";
 import { useAppDispatch } from "../store/hook";
 import { loginThunk } from "../store/slices/auth";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react"; // 👁️ for toggle
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false); // ✅ toggle state
+  const [isLoading, setIsLoading] = useState(false); // ✅ button loading state
+
+  const ErrorMessage = ({ error, className }) => {
+    if (!error) return null;
+    return (
+      <p className={`text-sm text-red-600 dark:text-red-400 ${className}`}>
+        {error}
+      </p>
+    );
+  };
+
   const dispatch = useAppDispatch();
   const router = useRouter();
 
@@ -27,14 +41,19 @@ export default function LoginPage() {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
+            setIsLoading(true); // start loading
             const res = await dispatch(loginThunk({ email, password }));
+            setIsLoading(false); // stop loading
             if (res.meta.requestStatus === "fulfilled") {
               router.push("/projects");
+            } else {
+              setErrors({ password: "Invalid email or password" });
             }
           }}
           className="mt-8 space-y-6"
           noValidate
         >
+          {/* Email */}
           <label className="block">
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 select-none">
               Email
@@ -49,32 +68,52 @@ export default function LoginPage() {
             />
           </label>
 
-          <label className="block">
+          {/* Password with eye toggle */}
+          <label className="block relative">
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-4 select-none">
               Password
             </span>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-2 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white py-3 px-4 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-300"
+              className="mt-2 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white py-3 px-4 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-300 pr-10"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-[42px] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
           </label>
 
+          {/* Continue button */}
           <button
             type="submit"
-            className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 active:from-indigo-800 active:to-blue-800 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-60 transition duration-300 select-none"
+            disabled={isLoading}
+            className="w-full mt-6 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 active:from-indigo-800 active:to-blue-800 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-60 transition duration-300 select-none disabled:opacity-70"
           >
-            Continue →
+            {isLoading ? (
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            ) : (
+              "Continue →"
+            )}
           </button>
+
+          <ErrorMessage
+            error={errors.password}
+            className="mt-2 text-sm text-red-600 dark:text-red-400"
+          />
         </form>
 
         <p className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400 select-none">
           Don’t have an account?{" "}
           <a
-            href="/register"
+            href="/signup"
             className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline focus:underline transition duration-200"
           >
             Sign up

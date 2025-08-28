@@ -83,3 +83,22 @@ export const getProject = asyncHandler(async (req, res) => {
   if (!member) return forbidden(res, "Not a project member");
   return ok(res, { project });
 });
+
+export const getProjectOverview = asyncHandler(async (req, res) => {
+  console.log(req.params.id);
+
+  const project = await Project.findById(req.params.id);
+  if (!project) return notFound(res, "Project not found");
+  const isMember = project.members.some(
+    (m) => m.user.toString() === req.user._id.toString()
+  );
+
+  return ok(res, {
+    project: {
+      id: project._id,
+      name: project.name,
+      description: project.description,
+    },
+    isMember,
+  });
+});
