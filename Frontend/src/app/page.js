@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Error from "./error";
 
 export default function Home() {
   return (
@@ -6,10 +7,9 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-6 lg:px-12 grid lg:grid-cols-2 gap-12 items-center">
         {/* Left Content */}
         <section>
-          {/* App Logo/Name */}
           <div className="mb-4">
             <span className="inline-block px-3 py-1 text-sm font-semibold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">
-              Treelo‑Lite
+              Treelo-Lite
             </span>
           </div>
 
