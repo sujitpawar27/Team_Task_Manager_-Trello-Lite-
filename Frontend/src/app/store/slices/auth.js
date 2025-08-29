@@ -13,6 +13,8 @@ const initial = { user: User, token: getInitialToken() };
 export const loginThunk = createAsyncThunk("auth/login", async (payload) => {
   const { data } = await api.post("/auth/login", payload);
   localStorage.setItem("token", data.token);
+  // Persist user id for components that need quick access
+  if (data?.user?.id) localStorage.setItem("userId", data.user.id);
   return data;
 });
 
@@ -23,7 +25,10 @@ const slice = createSlice({
     logout(s) {
       s.user = null;
       s.token = null;
-      if (typeof window !== "undefined") localStorage.removeItem("token");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+      }
     },
   },
   extraReducers: (b) => {

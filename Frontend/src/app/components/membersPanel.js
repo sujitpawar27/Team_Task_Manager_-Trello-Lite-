@@ -92,7 +92,7 @@ export function MembersPanel({ project, onChange }) {
       member:
         "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 dark:from-gray-700 dark:to-gray-600 dark:text-gray-300",
     };
-
+    
     return (
       <span
         className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -123,7 +123,8 @@ export function MembersPanel({ project, onChange }) {
         </div>
       </div>
 
-      {/* Invite Section */}
+      {/* Invite / Grant Access Section (owners only) */}
+      {isOwner && (
       <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="p-1.5 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg text-white">
@@ -131,7 +132,7 @@ export function MembersPanel({ project, onChange }) {
           </div>
           <div>
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Invite New Members
+              Grant Project Access
             </h4>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Add people to collaborate
@@ -198,19 +199,19 @@ export function MembersPanel({ project, onChange }) {
                       className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors duration-200"
                       title={
                         !isOwner
-                          ? "Only owners can invite members"
-                          : "Invite user"
+                          ? "Only owners can grant access"
+                          : "Grant project access"
                       }
                     >
                       {inviting === user._id ? (
                         <>
                           <Loader2 className="w-3 h-3 animate-spin" />
-                          Inviting...
+                          Granting...
                         </>
                       ) : (
                         <>
                           <UserPlus className="w-3 h-3" />
-                          {isOwner ? "Invite" : "No Permission"}
+                          {isOwner ? "Grant access" : "No Permission"}
                         </>
                       )}
                     </button>
@@ -227,17 +228,20 @@ export function MembersPanel({ project, onChange }) {
             <p className="text-sm">No users found matching `{query}`</p>
           </div>
         )}
+      </div>
+      )}
 
-        {/* Permission Info */}
-        {!isOwner && (
-          <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-lg">
+      {/* Permission Info for non-owners */}
+      {!isOwner && (
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+          <div className="mt-1 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-lg">
             <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 text-sm">
               <Shield className="w-4 h-4" />
-              <span>Only project owners can invite new members</span>
+              <span>Only project owners can grant access to new members</span>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Members List */}
       <div className="space-y-3 mb-6 mt-4">
