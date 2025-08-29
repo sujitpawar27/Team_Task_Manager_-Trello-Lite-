@@ -3,7 +3,7 @@ import { Providers } from "./components/providers";
 import { Navbar } from "./components/Navbar";
 
 export const metadata = {
-  title: "Rast AI • Trello-Lite",
+  title: " Trello-Lite",
   description: "Team Task Manager",
 };
 
