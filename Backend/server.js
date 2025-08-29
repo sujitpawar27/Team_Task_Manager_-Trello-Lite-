@@ -9,6 +9,7 @@ import authRoutes from "./routes/authroutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/upload", uploadRoutes);
 
 const port = process.env.PORT || 4000;
 connectDB().then(() => {

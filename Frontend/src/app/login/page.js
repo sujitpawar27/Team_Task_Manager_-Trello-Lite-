@@ -4,14 +4,14 @@ import { useState } from "react";
 import { useAppDispatch } from "../store/hook";
 import { loginThunk } from "../store/slices/auth";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react"; // 👁️ for toggle
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false); // ✅ toggle state
-  const [isLoading, setIsLoading] = useState(false); // ✅ button loading state
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const ErrorMessage = ({ error, className }) => {
     if (!error) return null;
@@ -41,9 +41,9 @@ export default function LoginPage() {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            setIsLoading(true); // start loading
+            setIsLoading(true);
             const res = await dispatch(loginThunk({ email, password }));
-            setIsLoading(false); // stop loading
+            setIsLoading(false);
             if (res.meta.requestStatus === "fulfilled") {
               router.push("/projects");
             } else {
@@ -68,7 +68,6 @@ export default function LoginPage() {
             />
           </label>
 
-          {/* Password with eye toggle */}
           <label className="block relative">
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-4 select-none">
               Password
@@ -91,7 +90,6 @@ export default function LoginPage() {
             </button>
           </label>
 
-          {/* Continue button */}
           <button
             type="submit"
             disabled={isLoading}

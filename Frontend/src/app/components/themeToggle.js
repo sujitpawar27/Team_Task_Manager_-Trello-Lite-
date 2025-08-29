@@ -11,7 +11,6 @@ export function ThemeSwitcher() {
   }, []);
 
   if (!mounted) {
-    // Render nothing or a placeholder while mounting
     return null;
   }
 

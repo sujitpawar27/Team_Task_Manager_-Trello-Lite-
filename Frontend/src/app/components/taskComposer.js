@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Save,
   X,
@@ -12,6 +12,8 @@ import {
   PlayCircle,
   CheckCircle,
 } from "lucide-react";
+import FileAttachment from "./fileAttachment";
+import { api } from "@/app/lib/api";
 
 export function TaskComposer({
   onCreate,
@@ -27,6 +29,20 @@ export function TaskComposer({
   const [priority, setPriority] = useState("medium");
   const [status, setStatus] = useState("todo");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const dedupeAttachments = (arr = []) => {
+    const m = new Map();
+    for (const a of arr || []) {
+      if (!a) continue;
+      const key = a.url || `${a.name || ""}-${a.size || 0}`;
+      m.set(key, a);
+    }
+    return Array.from(m.values());
+  };
 
   const isEditing = Boolean(selectedTask && selectedTask._id);
 
@@ -39,18 +55,24 @@ export function TaskComposer({
         title: title.trim(),
         description: description.trim(),
         assignee: assignee || undefined,
-        dueDate: new Date(dueDate).toISOString() || undefined,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         priority,
         status,
+        // Only include attachments in payload when creating, not editing
+        ...(isEditing
+          ? {}
+          : { attachments: attachments.length ? attachments : undefined }),
       };
 
       if (isEditing) {
         await onUpdate(selectedTask._id, payload);
+        // reset local form first, then notify parent to clear selection
+        resetForm();
+        if (onCancelEdit) onCancelEdit();
       } else {
         await onCreate(payload);
+        resetForm();
       }
-
-      resetForm();
     } catch (error) {
       console.error("Error submitting task:", error);
     } finally {
@@ -65,6 +87,9 @@ export function TaskComposer({
     setDueDate("");
     setPriority("medium");
     setStatus("todo");
+    setAttachments([]);
+    setSelectedFiles([]);
+    if (fileInputRef && fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleCancel = () => {
@@ -72,15 +97,23 @@ export function TaskComposer({
     if (onCancelEdit) onCancelEdit();
   };
 
-  // Initialize form with selected task data
-  if (isEditing && title === "" && description === "" && selectedTask) {
-    setTitle(selectedTask.title || "");
-    setDescription(selectedTask.description || "");
-    setAssignee(selectedTask.assignee?._id || selectedTask.assignee || "");
-    setDueDate(selectedTask.dueDate ? selectedTask.dueDate.split("T")[0] : "");
-    setPriority(selectedTask.priority || "medium");
-    setStatus(selectedTask.status || "todo");
-  }
+  // Initialize form with selected task data when selection changes
+  useEffect(() => {
+    if (selectedTask && selectedTask._id) {
+      setTitle(selectedTask.title || "");
+      setDescription(selectedTask.description || "");
+      setAssignee(selectedTask.assignee?._id || selectedTask.assignee || "");
+      setDueDate(
+        selectedTask.dueDate ? selectedTask.dueDate.split("T")[0] : ""
+      );
+      setPriority(selectedTask.priority || "medium");
+      setStatus(selectedTask.status || "todo");
+      setAttachments(dedupeAttachments(selectedTask.attachments || []));
+    } else {
+      // no selection -> clear form
+      resetForm();
+    }
+  }, [selectedTask]);
 
   const priorityOptions = [
     {
@@ -149,6 +182,87 @@ export function TaskComposer({
           />
         </div>
 
+        {/* Attachments (only enabled when creating a new task) */}
+        {!isEditing && (
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <FileText className="w-4 h-4" />
+              Attachments
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={(e) =>
+                  setSelectedFiles(Array.from(e.target.files || []))
+                }
+                className="block w-full text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-100 dark:file:bg-gray-700 file:text-gray-700 dark:file:text-gray-200 hover:file:bg-gray-200 dark:hover:file:bg-gray-600"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!selectedFiles.length) return;
+                  setUploading(true);
+                  try {
+                    const uploaded = [];
+                    for (const f of selectedFiles) {
+                      const fd = new FormData();
+                      fd.set("file", f);
+                      const { data } = await api.post(`/upload/`, fd, {
+                        headers: { "Content-Type": "multipart/form-data" },
+                      });
+                      uploaded.push({
+                        url: data.url,
+                        name: data.name,
+                        size: data.size,
+                      });
+                    }
+                    setAttachments(uploaded);
+                    setSelectedFiles([]);
+                    if (fileInputRef && fileInputRef.current)
+                      fileInputRef.current.value = "";
+                  } catch (err) {
+                    console.error(err);
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+                disabled={uploading || selectedFiles.length === 0}
+                className="inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md disabled:opacity-60"
+              >
+                {uploading ? "Uploading..." : "Upload"}
+              </button>
+            </div>
+
+            {attachments.length > 0 && (
+              <div className="space-y-2 pt-2">
+                {attachments.map((a, i) => (
+                  <div
+                    key={`${a.url}-${i}`}
+                    className="flex items-center justify-between gap-3 bg-gray-50 dark:bg-gray-900 rounded-lg px-3 py-2"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="truncate text-sm text-indigo-600 hover:underline"
+                        title={a.name}
+                      >
+                        {a.name}
+                      </a>
+                      <span className="text-xs text-gray-500">
+                        {a.size ? `${Math.round(a.size / 1024)} KB` : ""}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Form Grid */}
         <div className="grid md:grid-cols-3 gap-6">
           {/* Assignee Selection */}
@@ -163,7 +277,7 @@ export function TaskComposer({
                 onChange={(e) => setAssignee(e.target.value)}
                 className="w-full appearance-none rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white py-4 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300"
               >
-                <option value="">Unassigned</option>
+                <option value="">Select Members</option>
                 {members.map((member) => (
                   <option key={member._id} value={member._id}>
                     {member.name} ({member.email})
@@ -221,7 +335,9 @@ export function TaskComposer({
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
             {/* Use the icon matching the current status */}
             {(() => {
-              const current = statusOptions.find((s) => s.value === status) || statusOptions[0];
+              const current =
+                statusOptions.find((s) => s.value === status) ||
+                statusOptions[0];
               const Icon = current.Icon;
               return <Icon className="w-4 h-4" />;
             })()}
@@ -241,7 +357,9 @@ export function TaskComposer({
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
               {(() => {
-                const current = statusOptions.find((s) => s.value === status) || statusOptions[0];
+                const current =
+                  statusOptions.find((s) => s.value === status) ||
+                  statusOptions[0];
                 const Icon = current.Icon;
                 return <Icon className="w-5 h-5 text-gray-400" />;
               })()}
@@ -298,6 +416,11 @@ export function TaskComposer({
           </button>
         </div>
       </form>
+      {/* {isEditing && (
+        <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+          <FileAttachment taskId={selectedTask._id} />
+        </div>
+      )} */}
     </div>
   );
 }

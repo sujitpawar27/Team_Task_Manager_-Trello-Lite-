@@ -53,14 +53,69 @@ export default function ProjectBoard({ params }) {
     }
   }, [isMember]);
 
-  const onMove = async (taskId, status) => {
-    await api.patch(`/tasks/${taskId}/move`, { status, project: projectId });
-    await loadMembersAndTasks();
+  const onMove = async (
+    taskId,
+    status,
+    destIndex = undefined,
+    srcIndex = undefined,
+    srcStatus = undefined
+  ) => {
+    if (
+      srcStatus &&
+      srcStatus === status &&
+      typeof destIndex === "number" &&
+      typeof srcIndex === "number"
+    ) {
+      setTasks((prev) => {
+        const sameIndexes = [];
+        for (let i = 0; i < prev.length; i++) {
+          if (prev[i].status === status) sameIndexes.push(i);
+        }
+        if (
+          srcIndex < 0 ||
+          destIndex < 0 ||
+          srcIndex >= sameIndexes.length ||
+          destIndex > sameIndexes.length
+        )
+          return prev;
+
+        const srcAbsolute = sameIndexes[srcIndex];
+        const destAbsolute =
+          destIndex === sameIndexes.length
+            ? prev.length
+            : sameIndexes[destIndex];
+
+        const next = prev.slice();
+        const [moving] = next.splice(srcAbsolute, 1);
+        let adjustedDest = destAbsolute;
+        if (srcAbsolute < destAbsolute) adjustedDest = destAbsolute - 1;
+        next.splice(adjustedDest, 0, moving);
+        return next;
+      });
+      return;
+    }
+
+    setTasks((prev) =>
+      prev.map((t) => (t._id === taskId ? { ...t, status } : t))
+    );
+    try {
+      await api.patch(`/tasks/${taskId}/move`, { status, project: projectId });
+      await loadMembersAndTasks();
+    } catch (err) {
+      await loadMembersAndTasks();
+      console.error("Failed to move task", err);
+    }
   };
 
   const createTask = async (payload) => {
-    await api.post("/tasks", { ...payload, project: projectId });
+    console.log("Creating task with payload:", payload);
+
+    const { data } = await api.post("/tasks", {
+      ...payload,
+      project: projectId,
+    });
     await loadMembersAndTasks();
+    return data.task;
   };
 
   const updateTask = async (taskId, payload) => {
@@ -189,6 +244,7 @@ export default function ProjectBoard({ params }) {
                     selectedTask={selectedTask}
                     onCancelEdit={() => setSelectedTask(null)}
                     members={members}
+                    projectId={projectId}
                   />
                 </section>
 

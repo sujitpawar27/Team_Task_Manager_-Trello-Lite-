@@ -1,8 +1,9 @@
 "use client";
+import { useState, useMemo } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { createPortal } from "react-dom";
 import { TaskCard } from "./taskCard";
-import { Clock, CheckCircle, PlayCircle } from "lucide-react";
+import { Clock, CheckCircle, PlayCircle, Search } from "lucide-react";
 
 const columns = [
   {
@@ -32,8 +33,37 @@ const columns = [
 ];
 
 export function KanbanBoard({ tasks, onMove, onEditTask, onDeleteTask }) {
+  const [search, setSearch] = useState("");
+  const [assigneeFilter, setAssigneeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [dueDateFilter, setDueDateFilter] = useState("");
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      const matchesSearch =
+        t.title.toLowerCase().includes(search.toLowerCase()) ||
+        (t.description || "").toLowerCase().includes(search.toLowerCase());
+
+      const matchesAssignee =
+        !assigneeFilter ||
+        (t.assignee &&
+          ((typeof t.assignee === "object" &&
+            t.assignee._id === assigneeFilter) ||
+            (typeof t.assignee !== "object" && t.assignee === assigneeFilter)));
+
+      const matchesStatus = !statusFilter || t.status === statusFilter;
+
+      const matchesDueDate =
+        !dueDateFilter || (t.dueDate && t.dueDate.startsWith(dueDateFilter));
+
+      return (
+        matchesSearch && matchesAssignee && matchesStatus && matchesDueDate
+      );
+    });
+  }, [tasks, search, assigneeFilter, statusFilter, dueDateFilter]);
+
   const grouped = Object.fromEntries(
-    columns.map((c) => [c.key, tasks.filter((t) => t.status === c.key)])
+    columns.map((c) => [c.key, filteredTasks.filter((t) => t.status === c.key)])
   );
 
   const handleDragEnd = (result) => {
@@ -48,24 +78,75 @@ export function KanbanBoard({ tasks, onMove, onEditTask, onDeleteTask }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Task Board
-        </h2>
-        <div className="flex items-center gap-4 text-sm">
-          {columns.map((col) => (
-            <div key={col.key} className="flex items-center gap-2">
-              <div
-                className={`w-3 h-3 rounded-full bg-gradient-to-r ${col.gradient}`}
-              ></div>
-              <span className="text-gray-600 dark:text-gray-400">
-                {col.title}: {grouped[col.key].length}
-              </span>
-            </div>
-          ))}
+      {/* Top Filters */}
+      <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+        {/* Search */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3">
+          <select
+            value={assigneeFilter}
+            onChange={(e) => setAssigneeFilter(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white"
+          >
+            <option value="">All Assignees</option>
+            {[
+              ...new Map(
+                tasks
+                  .map((t) => t.assignee)
+                  .filter(Boolean)
+                  .map((a) => [typeof a === "object" ? a._id : a, a])
+              ).values(),
+            ].map((a) => {
+              if (typeof a === "object") {
+                return (
+                  <option key={a._id} value={a._id}>
+                    {a.name || a.email || a._id}
+                  </option>
+                );
+              } else {
+                return (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                );
+              }
+            })}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white"
+          >
+            <option value="">All Status</option>
+            {columns.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.title}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="date"
+            value={dueDateFilter}
+            onChange={(e) => setDueDateFilter(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white"
+          />
         </div>
       </div>
 
+      {/* Board */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid md:grid-cols-3 gap-6">
           {columns.map((col) => {
@@ -76,14 +157,11 @@ export function KanbanBoard({ tasks, onMove, onEditTask, onDeleteTask }) {
                   <section
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`
-                      relative overflow-hidden rounded-2xl border-2 transition-all duration-300 min-h-[400px]
-                      ${
-                        snapshot.isDraggingOver
-                          ? `${col.bgColor} ${col.borderColor} shadow-lg `
-                          : "bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:shadow-md"
-                      }
-                    `}
+                    className={`relative overflow-hidden rounded-2xl border-2 transition-all duration-300 min-h-[400px] ${
+                      snapshot.isDraggingOver
+                        ? `${col.bgColor} ${col.borderColor} shadow-lg`
+                        : "bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:shadow-md"
+                    }`}
                   >
                     {/* Column Header */}
                     <header className="sticky top-0 z-10 p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
@@ -103,30 +181,6 @@ export function KanbanBoard({ tasks, onMove, onEditTask, onDeleteTask }) {
                               {grouped[col.key].length === 1 ? "task" : "tasks"}
                             </p>
                           </div>
-                        </div>
-
-                        {/* Progress Indicator */}
-                        <div
-                          className={`
-                          px-3 py-1 rounded-full text-xs font-medium
-                          ${
-                            col.key === "todo"
-                              ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300"
-                              : ""
-                          }
-                          ${
-                            col.key === "in_progress"
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
-                              : ""
-                          }
-                          ${
-                            col.key === "done"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
-                              : ""
-                          }
-                        `}
-                        >
-                          {grouped[col.key].length}
                         </div>
                       </div>
                     </header>
@@ -151,50 +205,37 @@ export function KanbanBoard({ tasks, onMove, onEditTask, onDeleteTask }) {
                             draggableId={t._id}
                             index={idx}
                           >
-                            {(providedDraggable, snapshotDraggable) => (
-                              (() => {
-                                const content = (
-                                  <div
-                                    ref={providedDraggable.innerRef}
-                                    {...providedDraggable.draggableProps}
-                                    className={`
-        ${
-          snapshotDraggable.isDragging
-            ? "transition-none shadow-2xl z-50"
-            : "transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
-        }
-      `}
-                                  >
-                                    <TaskCard
-                                      task={t}
-                                      onEdit={onEditTask}
-                                      onDelete={onDeleteTask}
-                                      columnType={col.key}
-                                      dragHandleProps={
-                                        providedDraggable.dragHandleProps
-                                      }
-                                    />
-                                  </div>
-                                );
-                                return snapshotDraggable.isDragging
-                                  ? createPortal(content, document.body)
-                                  : content;
-                              })()
-                            )}
+                            {(providedDraggable, snapshotDraggable) => {
+                              const content = (
+                                <div
+                                  ref={providedDraggable.innerRef}
+                                  {...providedDraggable.draggableProps}
+                                  className={`${
+                                    snapshotDraggable.isDragging
+                                      ? "transition-none shadow-2xl z-50"
+                                      : "transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+                                  }`}
+                                >
+                                  <TaskCard
+                                    task={t}
+                                    onEdit={onEditTask}
+                                    onDelete={onDeleteTask}
+                                    columnType={col.key}
+                                    dragHandleProps={
+                                      providedDraggable.dragHandleProps
+                                    }
+                                  />
+                                </div>
+                              );
+                              return snapshotDraggable.isDragging
+                                ? createPortal(content, document.body)
+                                : content;
+                            }}
                           </Draggable>
                         ))
                       )}
                       {provided.placeholder}
                     </div>
-
-                    {/* Drag Target Indicator */}
-                    {snapshot.isDraggingOver && (
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div
-                          className={`absolute inset-2 border-2 border-dashed rounded-xl opacity-50 ${col.borderColor}`}
-                        ></div>
-                      </div>
-                    )}
                   </section>
                 )}
               </Droppable>

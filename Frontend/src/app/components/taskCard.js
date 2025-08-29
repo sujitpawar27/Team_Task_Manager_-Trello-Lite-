@@ -1,3 +1,6 @@
+"use client";
+import React from "react";
+import { useSelector } from "react-redux";
 import {
   Calendar,
   User,
@@ -5,9 +8,10 @@ import {
   Trash2,
   Clock,
   CheckCircle2,
-  PlayCircle2,
   PlayCircle,
+  MessageSquare,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function TaskCard({
   task,
@@ -16,6 +20,8 @@ export function TaskCard({
   columnType,
   dragHandleProps,
 }) {
+  const router = useRouter();
+  const { user } = useSelector((s) => s.auth || { user: null });
   const getStatusIcon = () => {
     switch (task.status) {
       case "todo":
@@ -92,8 +98,8 @@ export function TaskCard({
         <div className="flex items-center gap-1">
           <button
             onClick={() => {
-              console.log("Edit clicked", task);
               onEdit(task);
+              
             }}
             className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             title="Edit Task"
@@ -113,6 +119,28 @@ export function TaskCard({
             aria-label="Delete Task"
           >
             <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+          <button
+            onClick={() => {
+              const projectId = task.project?._id || task.project;
+              const url = `/tasks/${task._id}?projectId=${projectId}`;
+              router.push(url);
+            }}
+            className="icon-btn relative"
+            title="Comments"
+            aria-label="Toggle Comments"
+          >
+            <MessageSquare className="w-5 h-5 text-gray-500 dark:text-gray-200" />
+            {task.commentCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-gradient-to-br from-indigo-500 to-purple-500 text-white rounded-full px-2 py-0.5 text-xs font-semibold shadow-md">
+                {task.commentCount}
+              </span>
+            )}
+            {task.lastComment &&
+              user &&
+              task.lastComment.author?._id !== user._id && (
+                <span className="absolute -top-2 -left-2 w-2 h-2 bg-red-500 rounded-full border border-white" />
+              )}
           </button>
           {/* Drag Handle Area */}
           {dragHandleProps && (
@@ -221,6 +249,8 @@ export function TaskCard({
           <CheckCircle2 className="w-12 h-12 text-green-500 pointer-events-none" />
         </div>
       )}
+      {/* Comments Panel */}
+      {/* Comments now open on a dedicated task page instead of inline */}
     </article>
   );
 }
