@@ -1,11 +1,7 @@
-
 [build]
   base    = "Frontend"
-  publish = "out"
   command = "npm run build"
+  publish = ".next"
 
-[[redirects]]
-  from = "/api/*"
-  to = "http://localhost:5000/:splat"
-  status = 200
-  force = true
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
