@@ -2,7 +2,7 @@ import { z } from "zod";
 import Project from "../models/Project.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { created, notFound, ok } from "../utils/http.js";
-import { bad } from "../utils/http.js"; // ensure bad is imported
+import { bad } from "../utils/http.js";
 
 export const listProjects = asyncHandler(async (req, res) => {
   const projects = await Project.find({ "members.user": req.user._id }).sort(
@@ -68,7 +68,6 @@ export const removeMember = asyncHandler(async (req, res) => {
   return ok(res, { project: req.project });
 });
 
-// add at top with other exports
 
 export const getProject = asyncHandler(async (req, res) => {
   const project = await Project.findById(req.params.id).populate(
@@ -76,7 +75,6 @@ export const getProject = asyncHandler(async (req, res) => {
     "name email"
   );
   if (!project) return notFound(res, "Project not found");
-  // ensure requester is a member (or you can use requireProjectMember middleware instead)
   const member = project.members.find(
     (m) => m.user._id.toString() === req.user._id.toString()
   );
