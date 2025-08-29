@@ -9,7 +9,7 @@ export default function Home() {
         <section>
           <div className="mb-4">
             <span className="inline-block px-3 py-1 text-sm font-semibold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">
-              Treelo-Lite
+              Trello-Lite
             </span>
           </div>
 
