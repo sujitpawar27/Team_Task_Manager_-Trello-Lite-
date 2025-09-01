@@ -8,12 +8,12 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState({ email: "", password: "" });
+  const [error, setError] = useState({ email: "", password: "", server: "" });
   const router = useRouter();
 
   const validate = () => {
     let valid = true;
-    let newErrors = { email: "", password: "" };
+    let newErrors = { email: "", password: "", server: "" };
 
     // Email validation
     if (!email.includes("@") || !email.includes(".")) {
@@ -35,8 +35,16 @@ export default function SignupPage() {
     if (!name || !email || !password) return;
     if (!validate()) return;
 
-    await api.post("/auth/register", { name, email, password });
-    router.push("/login");
+    try {
+      await api.post("/auth/register", { name, email, password });
+      router.push("/login");
+    } catch (err) {
+      let message = "Something went wrong. Please try again.";
+      if (err.response?.status === 409 || err.response?.status === 400) {
+        message = "User with this email already exists.";
+      }
+      setError((prev) => ({ ...prev, server: message }));
+    }
   };
 
   return (
@@ -102,6 +110,11 @@ export default function SignupPage() {
               <p className="mt-1 text-sm text-red-500">{error.password}</p>
             )}
           </div>
+
+          {/* Server error */}
+          {error.server && (
+            <p className="text-center text-sm text-red-600">{error.server}</p>
+          )}
 
           <button
             onClick={handleSubmit}
