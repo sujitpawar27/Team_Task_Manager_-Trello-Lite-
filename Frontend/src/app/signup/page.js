@@ -8,10 +8,33 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState({ email: "", password: "" });
   const router = useRouter();
+
+  const validate = () => {
+    let valid = true;
+    let newErrors = { email: "", password: "" };
+
+    // Email validation
+    if (!email.includes("@") || !email.includes(".")) {
+      newErrors.email = "Email must include '@' and '.'";
+      valid = false;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+      valid = false;
+    }
+
+    setError(newErrors);
+    return valid;
+  };
 
   const handleSubmit = async () => {
     if (!name || !email || !password) return;
+    if (!validate()) return;
+
     await api.post("/auth/register", { name, email, password });
     router.push("/login");
   };
@@ -57,6 +80,9 @@ export default function SignupPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
             />
+            {error.email && (
+              <p className="mt-1 text-sm text-red-500">{error.email}</p>
+            )}
           </div>
 
           <div>
@@ -72,6 +98,9 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
             />
+            {error.password && (
+              <p className="mt-1 text-sm text-red-500">{error.password}</p>
+            )}
           </div>
 
           <button
