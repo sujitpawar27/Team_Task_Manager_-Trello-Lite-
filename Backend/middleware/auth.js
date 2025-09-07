@@ -4,7 +4,7 @@ import { unauthorized } from "../utils/http.js";
 
 export const auth = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1] || req.cookies.token;
+    const token = req.headers.authorization?.split(" ")[1] ;
     if (!token) return unauthorized(res);
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(payload.id).select("-password");

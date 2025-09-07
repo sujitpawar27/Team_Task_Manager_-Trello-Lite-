@@ -7,7 +7,6 @@ import { auth } from "../middleware/auth.js";
 
 const r = Router();
 
-// Authenticated upload endpoint. Accepts single file in field `file`.
 r.post("/", auth, uploadMiddleware, uploadFile);
 
 export default r;

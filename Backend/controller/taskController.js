@@ -103,7 +103,6 @@ export const createTask = asyncHandler(async (req, res) => {
     }
   }
 
-  console.log("✅ Task created:", task._id);
   return created(res, { task });
 });
 
@@ -260,10 +259,13 @@ const attachCommentMeta = async (tasks) => {
 };
 
 export const getTask = asyncHandler(async (req, res) => {
-  console.log("🔍 Fetching task details for:", req.params.id);
-
-  const task = await Task.findById(req.params.id);
+  const task = await Task.findById(req.params.id).populate(
+    "assignee",
+    "name email"
+  );
   if (!task) return notFound(res, "Task not found");
+  console.log("➡️ Fetched task:", task);
+
   return ok(res, { task });
 });
 
